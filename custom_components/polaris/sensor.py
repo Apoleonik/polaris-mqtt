@@ -44,6 +44,7 @@ from .const import (
     SENSOR_VACUUM_EXPENDABLE_MOP,
     SENSOR_VACUUM_EXPENDABLE_DUST,
     SENSORS_FAN,
+    SENSORS_VENTILATION,
     PolarisSensorEntityDescription,
     POLARIS_KETTLE_TYPE,
     POLARIS_KETTLE_WITH_WEIGHT_TYPE,
@@ -68,12 +69,14 @@ from .const import (
     POLARIS_THERMOSTAT_TYPE,
     POLARIS_FAN_TYPE,
     POLARIS_WINDOWCLEANER_TYPE,
+    POLARIS_VENTILATION_TYPE,
     KETTLE_ERROR,
     HUMIDDIFIER_ERROR,
     COOKER_ERROR,
     COFFEEMAKER_ERROR,
     AIRCLEANER_ERROR,
     WINDOWCLEANER_ERROR,
+    VENTILATION_ERROR,
     POLARIS_VACUUM_01_ERROR_CODE,
     POLARIS_VACUUM_02_ERROR_CODE,
     POLARIS_VACUUM_03_ERROR_CODE,
@@ -562,6 +565,34 @@ async def async_setup_entry(
                     device_id=deviceID,
                 )
             )
+    if (devicetype in POLARIS_VENTILATION_TYPE):
+        # Create sensors for all devices 
+        SENSORS_COFFEEMAKER_ROG_CP = copy.deepcopy(SENSORS_COFFEEMAKER_ROG)
+        for description in SENSORS_COFFEEMAKER_ROG_CP:
+            description.mqttTopicCurrentValue = (f"{mqttRoot}/{device_prefix_topic}/state/{description.key}")
+            description.device_prefix_topic = device_prefix_topic
+            sensorList.append(
+                PolarisSensor(
+                    description=description,
+                    device_friendly_name=deviceID,
+                    mqtt_root=mqttRoot,
+                    device_type=devicetype,
+                    device_id=deviceID,
+                )
+            )
+        SENSORS_VENTILATION_CP = copy.deepcopy(SENSORS_VENTILATION)
+        for description in SENSORS_VENTILATION_CP:
+            description.mqttTopicCurrentValue = (f"{mqttRoot}/{device_prefix_topic}/state/{description.key}")
+            description.device_prefix_topic = device_prefix_topic
+            sensorList.append(
+                PolarisSensor(
+                    description=description,
+                    device_friendly_name=deviceID,
+                    mqtt_root=mqttRoot,
+                    device_type=devicetype,
+                    device_id=deviceID,
+                )
+            )
     async_add_entities(sensorList)
 
 
@@ -628,6 +659,8 @@ class PolarisSensor(PolarisBaseEntity, SensorEntity):
                     payload_message = AIRCLEANER_ERROR[payload_message]
                 if POLARIS_DEVICE[int(self.device_type)]['class'] == "window_cleaner":
                     payload_message = WINDOWCLEANER_ERROR.get(payload_message, payload_message)
+                if POLARIS_DEVICE[int(self.device_type)]['class'] == "ventilation":
+                    payload_message = VENTILATION_ERROR.get(payload_message, payload_message)
                 if POLARIS_DEVICE[int(self.device_type)]['class'] == "cleaner":
                     if int(self.device_type) in POLARIS_VACUUM_01_ERROR_CODE:
                         payload_message = VACUUM_01_ERROR[str(int(payload_message,16))]
@@ -697,6 +730,10 @@ class PolarisSensor(PolarisBaseEntity, SensorEntity):
                 payload_message = str(int(payload_message[10:12],16) * 256 + int(payload_message[8:10],16))
             if self.entity_description.name == "total_clean_area":
                 payload_message = str(int(payload_message[2:4], 16) * 256 + int(payload_message[:2], 16))
+            if self.entity_description.translation_key == "temperature_ra_sensor":
+                payload_message = str(int(payload_message[:2], 16))
+            if self.entity_description.translation_key == "temperature_oa_sensor":
+                payload_message = str(int(payload_message[2:4], 16))
 
             self._attr_native_value = payload_message
             self.async_write_ha_state()

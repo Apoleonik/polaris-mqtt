@@ -35,6 +35,7 @@ from .const import (
     NUMBERS_HEATER,
     NUMBERS_THERMOSTAT,
     NUMBERS_FAN,
+    NUMBERS_VENTILATION,
     PolarisNumberEntityDescription,
     POLARIS_KETTLE_TYPE,
     POLARIS_KETTLE_WITH_WEIGHT_TYPE,
@@ -48,6 +49,7 @@ from .const import (
     POLARIS_HEATER_TYPE,
     POLARIS_THERMOSTAT_TYPE,
     POLARIS_FAN_TYPE,
+    POLARIS_VENTILATION_TYPE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -226,6 +228,22 @@ async def async_setup_entry(
                     device_id=device_id
                 )
             )
+    if (device_type in POLARIS_VENTILATION_TYPE): 
+    # Create Ventilation  
+        NUMBERS_VENTILATION_LC = copy.deepcopy(NUMBERS_VENTILATION)
+        for description in NUMBERS_VENTILATION_LC:
+            description.mqttTopicCurrent = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCurrent}" 
+            description.mqttTopicCommand = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommand}"
+            description.device_prefix_topic = device_prefix_topic
+            numberList.append(
+                PolarisNumber(
+                    description=description,
+                    device_friendly_name=device_id,
+                    mqtt_root=mqtt_root,
+                    device_type=device_type,
+                    device_id=device_id
+                )
+            )
     async_add_entities(numberList, update_before_add=True)
 
 
@@ -262,7 +280,7 @@ class PolarisNumber(PolarisBaseEntity, NumberEntity):
             self._attr_native_min_value = 35
         if self.device_type in POLARIS_THERMOSTAT_TYPE:
             self._data_zero = "00000000000000000000000000000000000000"
-        if self.device_type == "180":
+        if self.device_type in ("180","834"):
             self._data_zero = "0000"
 
 
@@ -294,6 +312,14 @@ class PolarisNumber(PolarisBaseEntity, NumberEntity):
             self._attr_native_value = int(value)
             mqtt.publish(self.hass, self.entity_description.mqttTopicCommand, f"{int(value):02x}{self._data_zero[-2:]}")
             
+        elif self.entity_description.translation_key == "bypass_opening_temperature":
+            self._attr_native_value = int(value)
+            mqtt.publish(self.hass, self.entity_description.mqttTopicCommand, f"{int(value):02x}{self._data_zero[-2:]}")
+            
+        elif self.entity_description.translation_key == "range_of_bypass_temperature":
+            self._attr_native_value = int(value)
+            mqtt.publish(self.hass, self.entity_description.mqttTopicCommand, f"{self._data_zero[:2]}{int(value):02x}")
+            
         elif self.entity_description.translation_key == "fan_auto_off":
             self._attr_native_value = int(value)
             mqtt.publish(self.hass, self.entity_description.mqttTopicCommand, f"{int(value):02x}")
@@ -324,6 +350,12 @@ class PolarisNumber(PolarisBaseEntity, NumberEntity):
                 self._attr_native_value = int(message.payload[:2])
             elif self.entity_description.translation_key == "fan_auto_off":
                 self._attr_native_value = int(message.payload, 16)
+            elif self.entity_description.translation_key == "bypass_opening_temperature":
+                self._data_zero = message.payload
+                self._attr_native_value = int(message.payload[:2], 16)
+            elif self.entity_description.translation_key == "range_of_bypass_temperature":
+                self._data_zero = message.payload
+                self._attr_native_value = int(message.payload[2:4], 16)
             else:
                 if self.entity_description.native_min_value <= int(message.payload):
                     self._attr_native_value = message.payload

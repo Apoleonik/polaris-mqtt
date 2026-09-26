@@ -52,6 +52,7 @@ from .const import (
     SWITCHES_AIRCONDITIONER_856,
     SWITCHES_THERMOSTAT,
     SWITCHES_FAN,
+    SWITCH_VENTILATION,
     SWITCH_ROTATION_FAN,
     SWITCHES_WINDOWCLEANER,
     SWITCH_CHILD_LOCK,
@@ -82,6 +83,7 @@ from .const import (
     POLARIS_VACUUM_SWITCH_STREAM_WARM,
     POLARIS_VACUUM_SWITCH_BACKLIGHT,
     POLARIS_WINDOWCLEANER_TYPE,
+    POLARIS_VENTILATION_TYPE,
     VACUUM_SWITCH_01_TURBO,
     VACUUM_SWITCH_02_TURBO,
     VACUUM_SWITCH_03_TURBO
@@ -734,6 +736,20 @@ async def async_setup_entry(
             )
     if (device_type in POLARIS_WINDOWCLEANER_TYPE):
         for description in copy.deepcopy(SWITCHES_WINDOWCLEANER):
+            description.mqttTopicCommand = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommand}"
+            description.mqttTopicCurrentValue = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCurrentValue}"
+            description.device_prefix_topic = device_prefix_topic
+            switchList.append(
+                PolarisSwitch(
+                    description=description,
+                    device_friendly_name=device_id,
+                    mqtt_root=mqtt_root,
+                    device_type=device_type,
+                    device_id=device_id
+                )
+            )
+    if (device_type in POLARIS_VENTILATION_TYPE):
+        for description in copy.deepcopy(SWITCH_VENTILATION):
             description.mqttTopicCommand = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommand}"
             description.mqttTopicCurrentValue = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCurrentValue}"
             description.device_prefix_topic = device_prefix_topic

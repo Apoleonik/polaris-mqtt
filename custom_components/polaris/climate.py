@@ -40,6 +40,7 @@ from .const import (
     CLIMATES_HEATER,
     CLIMATES_AIRCONDITIONER,
     CLIMATES_THERMOSTAT,
+    VENTILATION,
     PolarisClimateEntityDescription,
     POLARIS_CLIMATE_TYPE,
     POLARIS_AIRCLEANER_TYPE,
@@ -47,6 +48,7 @@ from .const import (
     POLARIS_HEATER_TYPE,
     POLARIS_AIRCONDITIONER_TYPE,
     POLARIS_THERMOSTAT_TYPE,
+    POLARIS_VENTILATION_TYPE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -179,6 +181,25 @@ async def async_setup_entry(
             description.mqttTopicStateTemperature = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicStateTemperature}"
             description.mqttTopicCommandTemperature = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommandTemperature}"
             description.mqttTopicCurrentTemperature = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCurrentTemperature}"
+            description.mqttTopicCommandPower = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommandPower}"
+            description.mqttTopicCurrentPresetMode = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCurrentPresetMode}"
+            description.mqttTopicCommandPresetMode = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommandPresetMode}"
+            description.device_prefix_topic = device_prefix_topic
+            climateList.append(
+                PolarisClimate(
+                    description=description,
+                    device_friendly_name=device_id,
+                    mqtt_root=mqtt_root,
+                    device_type=device_type,
+                    device_id=device_id
+                )
+            )
+    if (device_type in POLARIS_VENTILATION_TYPE):
+        # Create ventilation
+        VENTILATION_LC = copy.deepcopy(VENTILATION)
+        for description in VENTILATION_LC:
+            description.mqttTopicStateTemperature = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicStateTemperature}"
+            description.mqttTopicCommandTemperature = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommandTemperature}"
             description.mqttTopicCommandPower = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommandPower}"
             description.mqttTopicCurrentPresetMode = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCurrentPresetMode}"
             description.mqttTopicCommandPresetMode = f"{mqtt_root}/{device_prefix_topic}/{description.mqttTopicCommandPresetMode}"

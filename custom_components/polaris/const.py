@@ -416,6 +416,7 @@ POLARIS_DEVICE = {
     878: {"model": "Electrolux_Royal-Thermo", "class": "thermostat"},
     867: {"model": "Electrolux_Royal-Thermo", "class": "thermostat"},
     829: {"model": "Electrolux_Royal-Thermo", "class": "thermostat"},
+    834: {"model": "Electrolux-EPVS_ERVX-inv_SHUFT-PVS_RVX-inv", "class": "ventilation"},
 }
 
 POLARIS_KETTLE_TYPE = ["2","6","8","29","36","37","38","51","52","53","54","56","57","58","59","60","61","62","63","67","82","83","84","85","86","97","105","106","117","121","139","165","175","176","177","189","194","196","205","209","253","254","255","260","271","308"]
@@ -452,6 +453,7 @@ POLARIS_AIRCONDITIONER_TYPE = ["813","820","882","808","815","868","851","821","
 POLARIS_THERMOSTAT_TYPE = ["878","867","829"]
 POLARIS_FAN_TYPE = ["180","248"]
 POLARIS_WINDOWCLEANER_TYPE = ["246"]
+POLARIS_VENTILATION_TYPE = ["834"]
 
 KETTLE_WITH_TEA_TIME_MODES = {"off": "0", "performance": "1", "electric": "3", "heat_pump": "4", "eco": "5", "gas": "6"}
 KETTLE_WITH_KEEP_WITH_WARM_MODES = {"off": "0", "performance": "1", "high_demand": "2", "electric": "3", "heat_pump": "4", "eco": "5", "gas": "6"}
@@ -635,6 +637,18 @@ WINDOWCLEANER_ERROR = {
 "02": "pressure_sensor",
 "05": "low_water",
 }
+
+VENTILATION_ERROR = {
+"01": "outdoor_temperature_sensor_error",
+"02": "eeprom_error",
+"03": "temperature_humidity_co2_sensor_is_abnormal",
+"04": "exhaust_temperature_sensor_error",
+"05": "communication_error",
+"06": "supply_temperature_sensor_error",
+"07": "exhausted_fan_error",
+"08": "supply_fan_error",
+}
+
 POLARIS_VACUUM_01_ERROR_CODE = [7,22,23,24,76,81,88,100,101,102,107,108,109,110,112,115,127]
 POLARIS_VACUUM_02_ERROR_CODE = [12,19,21,43,66,68,113,122,130,131,133,134,135,142,163,193,195,197]
 POLARIS_VACUUM_03_ERROR_CODE = [119,123,124,125,146,148,149,150,154,201,202,213,217,218,219,220,221]
@@ -2071,6 +2085,69 @@ SENSORS_FAN = [
     ),
 ]
 
+SENSORS_VENTILATION = [
+    PolarisSensorEntityDescription(
+        key="expendables",
+        name="filter_retain",
+        translation_key="filter_retain",
+        device_class=None,
+        native_unit_of_measurement=UnitOfTime.HOURS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        icon="mdi:air-filter",
+    ),
+    PolarisSensorEntityDescription(
+        key="sensor/pm2",
+        name="pm_2_5",
+        translation_key="pm2_5_sensor",
+        device_class=None,
+        native_unit_of_measurement=CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        icon="mdi:molecule",
+    ),
+    PolarisSensorEntityDescription(
+        key="sensor/humidity",
+        name="Humidity",
+        translation_key="humidity_sensor",
+        device_class=SensorDeviceClass.HUMIDITY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        icon="mdi:water-percent",
+    ),
+    PolarisSensorEntityDescription(
+        key="sensor/co2",
+        name="CO2",
+        translation_key="co2_sensor",
+        device_class=SensorDeviceClass.CO2,
+        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        icon="mdi:molecule-co2",
+    ),
+    PolarisSensorEntityDescription(
+        key="program_data/2",
+        name="Temperature RA",
+        translation_key="temperature_ra_sensor",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        icon="mdi:thermometer",
+    ),
+    PolarisSensorEntityDescription(
+        key="program_data/2",
+        name="Temperature OA",
+        translation_key="temperature_oa_sensor",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        icon="mdi:thermometer",
+    ),
+]
+
 @dataclass
 class PolarisSwitchEntityDescription(SwitchEntityDescription):
 
@@ -3218,6 +3295,21 @@ SWITCH_ROTATION_FAN = [
     ),
 ]
 
+SWITCH_VENTILATION = [
+    PolarisSwitchEntityDescription(
+        key="sync",
+        translation_key="sync",
+        entity_category=EntityCategory.CONFIG,
+        name="Sync",
+        mqttTopicCommand="control/program_data/3",
+        mqttTopicCurrentValue="state/program_data/3",
+        device_class=SwitchDeviceClass.SWITCH,
+        payload_on="02",
+        payload_off="01",
+        icon="mdi:swap-horizontal",
+    ),
+]
+
 @dataclass
 class PolarisWaterHeaterEntityDescription(WaterHeaterEntityDescription):                                                              # breaks_in_ha_version="2026.1"
 
@@ -3700,6 +3792,41 @@ NUMBERS_FAN = [
     ),
 ]
 
+NUMBERS_VENTILATION = [
+    PolarisNumberEntityDescription(
+        key="bypass_opening_temperature",
+        name="Bypass opening temperature",
+        translation_key="bypass_opening_temperature",
+        mqttTopicCurrent = "state/program_data/1",
+        mqttTopicCommand = "control/program_data/1",
+        entity_category=EntityCategory.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=True,
+        native_max_value=30,
+        native_min_value=5,
+        native_step=1,
+        native_value=10,
+        mode="slider",
+    ),
+    PolarisNumberEntityDescription(
+        key="range_of_bypass_temperature",
+        name="Range of bypass temperature",
+        translation_key="range_of_bypass_temperature",
+        mqttTopicCurrent = "state/program_data/1",
+        mqttTopicCommand = "control/program_data/1",
+        entity_category=EntityCategory.CONFIG,
+        device_class=NumberDeviceClass.TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        entity_registry_enabled_default=True,
+        native_max_value=15,
+        native_min_value=2,
+        native_step=1,
+        native_value=2,
+        mode="slider",
+    ),
+]
+
 @dataclass
 class PolarisSelectEntityDescription(SelectEntityDescription):
 
@@ -4042,6 +4169,48 @@ SELECT_FAN = [
         device_class=None,
         icon="mdi:lightbulb-on",
         entity_registry_enabled_default=True,
+    )
+]
+
+SELECT_VENTILATION = [
+    PolarisSelectEntityDescription(
+        key="filter_life",
+        name="Filter life",
+        translation_key="filter_life",
+        mqttTopicCurrentMode="state/program_data/0",
+        mqttTopicCommandMode="control/program_data/0",
+        options={
+          "45d": "00",
+          "60d": "01",
+          "90d": "02",
+          "180d": "03"
+        },
+        entity_category=EntityCategory.CONFIG,
+        device_class=None,
+        entity_registry_enabled_default=True,
+        icon="mdi:air-filter",
+    ),
+    PolarisSelectEntityDescription(
+        key="select_supply_fan_speed",
+        name="Supply fan speed",
+        translation_key="select_supply_fan_speed",
+        mqttTopicCurrentMode="state/speed",
+        mqttTopicCommandMode="control/speed",
+        options={"low": "1", "middle": "2", "high": "3"},
+        entity_category=EntityCategory.CONFIG,
+        device_class=None,
+        icon="mdi:fan",
+    ),
+    PolarisSelectEntityDescription(
+        key="select_exhausted_fan_speed",
+        name="Exhausted fan speed",
+        translation_key="select_exhausted_fan_speed",
+        mqttTopicCurrentMode="state/humidity",
+        mqttTopicCommandMode="control/humidity",
+        options={"low": "1", "middle": "2", "high": "3"},
+        entity_category=EntityCategory.CONFIG,
+        device_class=None,
+        icon="mdi:fan",
     )
 ]
 
@@ -4582,6 +4751,29 @@ CLIMATES_THERMOSTAT = [
         payload_off = "0",
         min_temp = 5,
         max_temp = 45,
+        temp_step = 1,
+        device_class = None,
+    )
+]
+
+VENTILATION = [
+    PolarisClimateEntityDescription(
+        name = "Ventilation",
+        key = "ventilation",
+        translation_key = "ventilation",
+        preset_mode = "on",
+        preset_modes = {"on": "1"},
+        hvac_modes = [HVACMode.OFF, HVACMode.FAN_ONLY],
+        supported_features = (ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON),
+        mqttTopicStateTemperature = "state/temperature",
+        mqttTopicCommandTemperature = "control/temperature",
+        mqttTopicCommandPower = "control/mode",
+        mqttTopicCurrentPresetMode = "state/mode",
+        mqttTopicCommandPresetMode = "control/mode",
+        payload_on = "1",
+        payload_off = "0",
+        min_temp = 10,
+        max_temp = 25,
         temp_step = 1,
         device_class = None,
     )
